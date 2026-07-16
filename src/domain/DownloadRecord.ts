@@ -23,6 +23,7 @@ export interface DownloadRecordSummary {
   total: number
   finished: number
   failed: number
+  speed: number
   folder: string
   targetPath: string
   createdAt: string

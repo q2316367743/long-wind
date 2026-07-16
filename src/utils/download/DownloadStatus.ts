@@ -21,3 +21,9 @@ export const getDownloadStatusTheme = (status: DownloadItemStatus) => {
   if (status === 'paused') return 'warning'
   return 'default'
 }
+
+export const formatDownloadSpeed = (speed: number): string => {
+  if (speed <= 0) return '0 KB/s'
+  if (speed < 1024) return `${Math.round(speed)} KB/s`
+  return `${(speed / 1024).toFixed(1)} MB/s`
+}

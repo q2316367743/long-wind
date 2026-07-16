@@ -114,6 +114,28 @@ class DownloadTaskService {
     return downloadRecordStore.readTask(id)
   }
 
+  async restoreInterruptedTasks(): Promise<void> {
+    const index = await downloadRecordStore.readIndex()
+    const activeStatuses: DownloadTaskRecord['base']['status'][] = ['downloading', 'batch_merging', 'final_merging']
+    for (const item of index.items) {
+      if (!activeStatuses.includes(item.status)) continue
+      const task = await downloadRecordStore.readTask(item.id)
+      if (!task) continue
+      task.base.status = 'waiting'
+      task.base.speed = 0
+      task.segments.forEach((segment) => {
+        if (segment.status === 'downloading') {
+          segment.status = 'pending'
+          segment.loaded = 0
+          segment.error = ''
+          segment.updatedAt = new Date().toISOString()
+        }
+      })
+      task.updatedAt = new Date().toISOString()
+      await downloadRecordStore.writeSegments(task)
+    }
+  }
+
   async start(id: string): Promise<void> {
     const task = await downloadRecordStore.readTask(id)
     if (!task || task.base.status === 'finished') return
@@ -128,6 +150,7 @@ class DownloadTaskService {
     if (!task || task.base.status !== 'downloading') return
     this.stoppedTaskIds.add(id)
     task.base.status = 'paused'
+    task.base.speed = 0
     task.updatedAt = new Date().toISOString()
     await downloadRecordStore.writeSegments(task)
   }
@@ -137,6 +160,7 @@ class DownloadTaskService {
     if (!task || task.base.status === 'finished') return
     this.stoppedTaskIds.add(id)
     task.base.status = 'cancelled'
+    task.base.speed = 0
     task.updatedAt = new Date().toISOString()
     await downloadRecordStore.writeSegments(task)
   }
@@ -180,6 +204,24 @@ class DownloadTaskService {
     await downloadRecordStore.writeSegments(task)
   }
 
+  async forceMerge(id: string): Promise<void> {
+    const task = await downloadRecordStore.readTask(id)
+    if (!task || task.base.status === 'finished') return
+    if (task.resource.type !== 'hls' && task.resource.type !== 'dash') return
+    if (task.segments.some((segment) => segment.status === 'pending' || segment.status === 'downloading')) return
+    const successSegments = task.segments.filter((segment) => segment.status === 'success')
+    if (successSegments.length === 0) return
+    task.base.status = 'final_merging'
+    task.updatedAt = new Date().toISOString()
+    await downloadRecordStore.writeSegments(task)
+    await createDownload(task.base.url).merge(successSegments, task.targetPath)
+    task.base.status = 'finished'
+    task.base.progress = Math.round((successSegments.length / task.segments.length) * 100)
+    task.base.speed = 0
+    task.updatedAt = new Date().toISOString()
+    await downloadRecordStore.writeSegments(task)
+  }
+
   private async downloadSegments(task: DownloadTaskRecord, segments: SegmentRecord[]): Promise<void> {
     await downloadEngine.download({
       segments,
@@ -188,6 +230,13 @@ class DownloadTaskService {
       proxy: task.config.proxy,
       getLocalPath: (segment) => getSegmentFilePath(task.id, segment.index),
       shouldStop: () => this.stoppedTaskIds.has(task.id),
+      onSpeedChange: async (speed) => {
+        const latestTask = await downloadRecordStore.readTask(task.id)
+        if (!latestTask) return
+        task.base.speed = speed
+        task.updatedAt = new Date().toISOString()
+        await downloadRecordStore.writeSegments(task)
+      },
       onSegmentChange: async () => {
         const latestTask = await downloadRecordStore.readTask(task.id)
         if (!latestTask) return
@@ -214,6 +263,7 @@ class DownloadTaskService {
       ? Math.round((task.segments.filter((segment) => segment.status === 'success').length / task.segments.length) * 100)
       : 0
     task.updatedAt = new Date().toISOString()
+    task.base.speed = 0
     await downloadRecordStore.writeSegments(task)
   }
 

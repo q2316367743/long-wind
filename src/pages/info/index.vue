@@ -7,6 +7,7 @@
         <t-button v-if="task.base.status === 'paused'" theme="primary" @click="startTask">继续</t-button>
         <t-button v-if="canRetry" theme="warning" @click="retryAll">全部重试</t-button>
         <t-button v-if="canMerge" theme="primary" @click="mergeTask">手动合并</t-button>
+        <t-button v-if="canForceMerge" theme="danger" @click="forceMergeTask">强制合并</t-button>
         <t-button v-if="canCancel" theme="warning" @click="cancelTask">取消</t-button>
         <t-button theme="danger" @click="removeTask">删除</t-button>
       </t-space>
@@ -27,6 +28,7 @@
             <span>全部 {{ task.segments.length }}</span>
             <span>完成 {{ successCount }}</span>
             <span>失败 {{ failedCount }}</span>
+            <span>速度 {{ formatDownloadSpeed(task.base.speed) }}</span>
             <span>
               保存到
               <t-link theme="primary" hover="color" @click="showTargetInFolder">
@@ -46,8 +48,8 @@
 import { downloadTaskService } from '@/core/DownloadTaskService'
 import { DownloadTaskRecord } from '@/domain/DownloadRecord'
 import { DownloadItemStatus } from '@/domain/DownloadItem'
-import { getDownloadStatusText, getDownloadStatusTheme } from '@/utils/download/DownloadStatus'
-import { MessageUtil } from '@/utils/modal'
+import { formatDownloadSpeed, getDownloadStatusText, getDownloadStatusTheme } from '@/utils/download/DownloadStatus'
+import { MessageBoxUtil, MessageUtil } from '@/utils/modal'
 import SegmentGrid from './components/SegmentGrid.vue'
 
 const route = useRoute()
@@ -73,6 +75,12 @@ const canCancel = computed(() => {
 const canMerge = computed(() => {
   if (!task.value || readonly.value) return false
   return task.value.segments.length > 0 && task.value.segments.every((segment) => segment.status === 'success')
+})
+const canForceMerge = computed(() => {
+  if (!task.value || readonly.value) return false
+  const isVideo = task.value.resource.type === 'hls' || task.value.resource.type === 'dash'
+  const noPending = task.value.segments.every((segment) => segment.status !== 'pending' && segment.status !== 'downloading')
+  return task.value.base.status === 'failed' && isVideo && noPending && failedCount.value > 0 && successCount.value > 0
 })
 const statusTheme = computed(() => getStatusTheme(task.value?.base.status ?? 'waiting'))
 
@@ -128,6 +136,21 @@ const retrySegment = async (index: number) => {
 const mergeTask = async () => {
   await downloadTaskService.merge(taskId.value)
   MessageUtil.success('合并完成')
+  await loadTask()
+}
+
+const forceMergeTask = async () => {
+  try {
+    await MessageBoxUtil.confirm(
+      '当前存在下载失败的分片，强制合并会忽略这些分片，生成的视频可能内容不完整或出现跳帧。是否继续？',
+      '强制合并确认',
+      { confirmButtonText: '继续合并', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  await downloadTaskService.forceMerge(taskId.value)
+  MessageUtil.warning('已强制合并，视频可能内容不完整')
   await loadTask()
 }
 

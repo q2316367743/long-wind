@@ -21,6 +21,9 @@
                 {{ getDownloadStatusText(item.status) }}
               </t-tag>
               <div class="task-card__count">{{ item.finished }}/{{ item.total }}</div>
+              <div v-if="item.status === 'downloading'" class="task-card__speed">
+                {{ formatDownloadSpeed(item.speed) }}
+              </div>
               <div v-if="item.failed" class="task-card__failed">失败 {{ item.failed }}</div>
               <t-space size="small" @click.stop>
                 <t-button v-if="item.status === 'downloading'" size="small" theme="default" @click="pauseTask(item.id)">
@@ -47,7 +50,7 @@ import { downloadTaskService } from '@/core/DownloadTaskService'
 import { DownloadRecordSummary } from '@/domain/DownloadRecord'
 import { DownloadItemStatus } from '@/domain/DownloadItem'
 import { openPostDownloadDialog } from '@/global/PostDownloadDialog'
-import { getDownloadStatusText, getDownloadStatusTheme } from '@/utils/download/DownloadStatus'
+import { formatDownloadSpeed, getDownloadStatusText, getDownloadStatusTheme } from '@/utils/download/DownloadStatus'
 
 const router = useRouter()
 const records = ref<DownloadRecordSummary[]>([])

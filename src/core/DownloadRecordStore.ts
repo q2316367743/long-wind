@@ -122,6 +122,7 @@ export class DownloadRecordStore {
       total,
       finished,
       failed,
+      speed: task.base.speed,
       folder: task.base.folder,
       targetPath: task.targetPath,
       createdAt: task.createdAt,

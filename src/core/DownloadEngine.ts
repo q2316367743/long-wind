@@ -7,6 +7,7 @@ export interface DownloadEngineOptions {
   proxy: string
   getLocalPath(segment: SegmentRecord): string
   shouldStop(): boolean
+  onSpeedChange(speed: number): Promise<void>
   onSegmentChange(segment: SegmentRecord): Promise<void>
 }
 
@@ -28,13 +29,29 @@ export class DownloadEngine {
     const queue = [...options.segments].sort((a, b) => a.index - b.index)
     const workerCount = Math.max(1, Math.min(options.threads || 1, queue.length || 1))
     let cursor = 0
+    let totalLoaded = 0
+    let lastLoaded = 0
+    let lastTime = Date.now()
+
+    const updateSpeed = async (): Promise<void> => {
+      const now = Date.now()
+      const duration = now - lastTime
+      if (duration < 1000) return
+      const speed = ((totalLoaded - lastLoaded) / duration) * 1000 / 1024
+      lastLoaded = totalLoaded
+      lastTime = now
+      await options.onSpeedChange(Math.max(0, Math.round(speed)))
+    }
 
     const next = async (): Promise<void> => {
       const index = cursor
       cursor += 1
       const segment = queue[index]
       if (!segment || options.shouldStop()) return
-      await this.downloadOne(segment, options)
+      await this.downloadOne(segment, options, (loaded) => {
+        totalLoaded += loaded
+        void updateSpeed()
+      })
       await next()
     }
 
@@ -45,7 +62,11 @@ export class DownloadEngine {
     }
   }
 
-  private async downloadOne(segment: SegmentRecord, options: DownloadEngineOptions): Promise<void> {
+  private async downloadOne(
+    segment: SegmentRecord,
+    options: DownloadEngineOptions,
+    onLoaded: (loaded: number) => void
+  ): Promise<void> {
     const localPath = options.getLocalPath(segment)
     segment.status = 'downloading'
     segment.localPath = localPath
@@ -62,6 +83,7 @@ export class DownloadEngine {
         localPath,
         { headers, proxy: options.proxy },
         (progress) => {
+          onLoaded(Math.max(0, progress.loaded - segment.loaded))
           segment.loaded = progress.loaded
           segment.total = progress.total || segment.total
         }
