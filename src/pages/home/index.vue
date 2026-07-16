@@ -10,7 +10,7 @@
       <t-empty v-if="records.length === 0" description="暂无下载任务" />
       <div v-else class="task-list">
         <t-card v-for="item in records" :key="item.id" hover-shadow @click="goInfo(item.id)">
-          <div class="task-card">
+          <div class="task-card cursor-pointer">
             <div class="task-card__main">
               <div class="task-card__title">{{ item.name }}</div>
               <div class="task-card__meta">{{ item.url }}</div>
@@ -26,16 +26,33 @@
               </div>
               <div v-if="item.failed" class="task-card__failed">失败 {{ item.failed }}</div>
               <t-space size="small" @click.stop>
-                <t-button v-if="item.status === 'downloading'" size="small" theme="default" @click="pauseTask(item.id)">
+                <t-button
+                  v-if="item.status === 'downloading'"
+                  size="small"
+                  theme="default"
+                  @click="pauseTask(item.id)"
+                >
                   暂停
                 </t-button>
-                <t-button v-if="item.status === 'paused'" size="small" theme="primary" @click="startTask(item.id)">
+                <t-button
+                  v-if="item.status === 'paused'"
+                  size="small"
+                  theme="primary"
+                  @click="startTask(item.id)"
+                >
                   继续
                 </t-button>
-                <t-button v-if="canCancel(item.status)" size="small" theme="warning" @click="cancelTask(item.id)">
+                <t-button
+                  v-if="canCancel(item.status)"
+                  size="small"
+                  theme="warning"
+                  @click="cancelTask(item.id)"
+                >
                   取消
                 </t-button>
-                <t-button size="small" theme="danger" @click="removeTask(item.id)">删除</t-button>
+                <t-popconfirm content="是否删除此任务" placement="left" @confirm="removeTask(item.id)">
+                  <t-button size="small" theme="danger">删除</t-button>
+                </t-popconfirm>
               </t-space>
             </div>
           </div>
@@ -50,7 +67,11 @@ import { downloadTaskService } from '@/core/DownloadTaskService'
 import { DownloadRecordSummary } from '@/domain/DownloadRecord'
 import { DownloadItemStatus } from '@/domain/DownloadItem'
 import { openPostDownloadDialog } from '@/global/PostDownloadDialog'
-import { formatDownloadSpeed, getDownloadStatusText, getDownloadStatusTheme } from '@/utils/download/DownloadStatus'
+import {
+  formatDownloadSpeed,
+  getDownloadStatusText,
+  getDownloadStatusTheme
+} from '@/utils/download/DownloadStatus'
 
 const router = useRouter()
 const records = ref<DownloadRecordSummary[]>([])
@@ -89,7 +110,6 @@ const removeTask = async (id: string) => {
 
 onMounted(loadRecords)
 useIntervalFn(loadRecords, 1000)
-
 </script>
 <style scoped lang="less">
 .home {

@@ -236,7 +236,7 @@ class DownloadTaskService {
         if (!latestTask) return
         latestTask.base.speed = speed
         latestTask.updatedAt = new Date().toISOString()
-        await downloadRecordStore.writeSegments(latestTask)
+        downloadRecordStore.writeSegmentsSoon(latestTask)
       },
       onSegmentChange: async () => {
         const latestTask = await downloadRecordStore.readTask(task.id)
@@ -245,7 +245,7 @@ class DownloadTaskService {
           task.base.status = latestTask.base.status
         }
         task.updatedAt = new Date().toISOString()
-        await downloadRecordStore.writeSegments(task)
+        downloadRecordStore.writeSegmentsSoon(task)
       }
     })
   }

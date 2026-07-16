@@ -39,11 +39,7 @@ export const useSettingStore = defineStore('setting', () => {
       // 使用自定义的 ffmpeg
       return
     }
-    if (window.preload.inject.getPlatform() === 'utools') {
-      await window.preload.inject.ffmpeg.run(args, onProgress)
-      return
-    }
-    return Promise.reject(new Error('FFmpeg not found'))
+    await window.preload.inject.ffmpeg.run(args, onProgress)
   }
 
   return {

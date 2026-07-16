@@ -8,7 +8,25 @@
           <t-form-item label="默认下载路径" name="downloadPath">
             <t-input v-model="state.downloadPath" placeholder="请选择下载路径" readonly>
               <template #suffix>
-                <t-button variant="text" size="small" @click="selectDownloadPath"> 选择 </t-button>
+                <t-button theme="primary" variant="text" size="small" @click="selectDownloadPath">
+                  选择
+                </t-button>
+              </template>
+            </t-input>
+          </t-form-item>
+          <t-form-item
+            label="自定义 ffmpeg 路径"
+            name="ffmpeg"
+            help="不建议修改，会使用自带的 ffmpeg "
+          >
+            <t-input v-model="state.ffmpeg" placeholder="请选择自定义 ffmpeg 路径" readonly>
+              <template #suffix>
+                <t-button theme="primary" variant="text" size="small" @click="selectFfmpegPath">
+                  选择
+                </t-button>
+                <t-button theme="danger" variant="text" size="small" @click="state.ffmpeg = ''">
+                  清空
+                </t-button>
               </template>
             </t-input>
           </t-form-item>
@@ -17,11 +35,10 @@
         <!-- 传输设置 -->
         <div class="setting-section">
           <h3 class="section-title">传输设置</h3>
-          <t-form-item label="下载限制 (KB/s)" name="downloadLimit">
+          <t-form-item label="下载限制 (MB/s)" name="downloadLimit" help="0 代表不限制">
             <t-input-number
               v-model="state.downloadLimit"
               :min="0"
-              placeholder="0 表示不限制"
               theme="normal"
             />
           </t-form-item>
@@ -130,6 +147,23 @@ const selectDownloadPath = async () => {
     MessageUtil.success('下载路径设置成功')
   } catch (error) {
     console.warn('用户取消选择下载路径')
+  }
+}
+
+const selectFfmpegPath = () => {
+  try {
+    // 使用 utools API 选择目录
+    // 检查是否在 utools 环境中
+    const selectedPath = window.preload.inject.dialog.open({
+      title: '选择自定义 ffmpeg 路径',
+      buttonLabel: '选择',
+      properties: ['openFile', 'createDirectory']
+    })
+    if (!selectedPath || !selectedPath[0]) return
+    state.value.ffmpeg = selectedPath[0]
+    MessageUtil.success('自定义 ffmpeg 路径设置成功')
+  } catch (error) {
+    console.warn('用户取消选择自定义 ffmpeg 路径')
   }
 }
 
