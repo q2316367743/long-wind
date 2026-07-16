@@ -39,6 +39,7 @@ module.exports = {
       const response = await axios({
         url,
         method: 'GET',
+        adapter: 'http',
         responseType: 'stream',
         headers: options?.headers || {},
         proxy: parseProxy(options?.proxy),
