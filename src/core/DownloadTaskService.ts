@@ -200,6 +200,7 @@ class DownloadTaskService {
     await createDownload(task.base.url).merge(task.segments, task.targetPath)
     task.base.status = 'finished'
     task.base.progress = 100
+    task.base.speed = 0
     task.updatedAt = new Date().toISOString()
     await downloadRecordStore.writeSegments(task)
   }
@@ -233,9 +234,9 @@ class DownloadTaskService {
       onSpeedChange: async (speed) => {
         const latestTask = await downloadRecordStore.readTask(task.id)
         if (!latestTask) return
-        task.base.speed = speed
-        task.updatedAt = new Date().toISOString()
-        await downloadRecordStore.writeSegments(task)
+        latestTask.base.speed = speed
+        latestTask.updatedAt = new Date().toISOString()
+        await downloadRecordStore.writeSegments(latestTask)
       },
       onSegmentChange: async () => {
         const latestTask = await downloadRecordStore.readTask(task.id)
@@ -252,19 +253,20 @@ class DownloadTaskService {
   private async finishOrFail(task: DownloadTaskRecord, autoMerge: boolean): Promise<void> {
     const latestTask = await downloadRecordStore.readTask(task.id)
     if (latestTask?.base.status === 'paused' || latestTask?.base.status === 'cancelled') return
-    const failed = task.segments.some((segment) => segment.status === 'failed')
-    const finished = task.segments.every((segment) => segment.status === 'success')
+    const currentTask = latestTask ?? task
+    const failed = currentTask.segments.some((segment) => segment.status === 'failed')
+    const finished = currentTask.segments.every((segment) => segment.status === 'success')
     if (finished && autoMerge) {
-      await this.merge(task.id)
+      await this.merge(currentTask.id)
       return
     }
-    task.base.status = failed ? 'failed' : 'downloading'
-    task.base.progress = task.segments.length
-      ? Math.round((task.segments.filter((segment) => segment.status === 'success').length / task.segments.length) * 100)
+    currentTask.base.status = failed ? 'failed' : 'downloading'
+    currentTask.base.progress = currentTask.segments.length
+      ? Math.round((currentTask.segments.filter((segment) => segment.status === 'success').length / currentTask.segments.length) * 100)
       : 0
-    task.updatedAt = new Date().toISOString()
-    task.base.speed = 0
-    await downloadRecordStore.writeSegments(task)
+    currentTask.updatedAt = new Date().toISOString()
+    currentTask.base.speed = 0
+    await downloadRecordStore.writeSegments(currentTask)
   }
 
   private async saveManifest(task: DownloadTaskRecord): Promise<void> {

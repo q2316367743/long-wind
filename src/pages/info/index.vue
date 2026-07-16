@@ -6,8 +6,8 @@
         <t-button v-if="task.base.status === 'downloading'" theme="default" @click="pauseTask">暂停</t-button>
         <t-button v-if="task.base.status === 'paused'" theme="primary" @click="startTask">继续</t-button>
         <t-button v-if="canRetry" theme="warning" @click="retryAll">全部重试</t-button>
-        <t-button v-if="canMerge" theme="primary" @click="mergeTask">手动合并</t-button>
-        <t-button v-if="canForceMerge" theme="danger" @click="forceMergeTask">强制合并</t-button>
+        <t-button v-if="canMerge" theme="primary" :loading="merging" @click="mergeTask">手动合并</t-button>
+        <t-button v-if="canForceMerge" theme="danger" :loading="merging" @click="forceMergeTask">强制合并</t-button>
         <t-button v-if="canCancel" theme="warning" @click="cancelTask">取消</t-button>
         <t-button theme="danger" @click="removeTask">删除</t-button>
       </t-space>
@@ -55,6 +55,7 @@ import SegmentGrid from './components/SegmentGrid.vue'
 const route = useRoute()
 const router = useRouter()
 const task = ref<DownloadTaskRecord | null>(null)
+const merging = ref(false)
 const taskId = computed(() => String(route.params.key ?? ''))
 
 const successCount = computed(() => task.value?.segments.filter((segment) => segment.status === 'success').length ?? 0)
@@ -134,12 +135,19 @@ const retrySegment = async (index: number) => {
 }
 
 const mergeTask = async () => {
-  await downloadTaskService.merge(taskId.value)
-  MessageUtil.success('合并完成')
-  await loadTask()
+  if (merging.value) return
+  merging.value = true
+  try {
+    await downloadTaskService.merge(taskId.value)
+    MessageUtil.success('合并完成')
+    await loadTask()
+  } finally {
+    merging.value = false
+  }
 }
 
 const forceMergeTask = async () => {
+  if (merging.value) return
   try {
     await MessageBoxUtil.confirm(
       '当前存在下载失败的分片，强制合并会忽略这些分片，生成的视频可能内容不完整或出现跳帧。是否继续？',
@@ -149,9 +157,14 @@ const forceMergeTask = async () => {
   } catch {
     return
   }
-  await downloadTaskService.forceMerge(taskId.value)
-  MessageUtil.warning('已强制合并，视频可能内容不完整')
-  await loadTask()
+  merging.value = true
+  try {
+    await downloadTaskService.forceMerge(taskId.value)
+    MessageUtil.warning('已强制合并，视频可能内容不完整')
+    await loadTask()
+  } finally {
+    merging.value = false
+  }
 }
 
 onMounted(loadTask)
