@@ -24,6 +24,18 @@
       "icon": "public/logo.png",
       "platform": ["win32", "darwin", "linux"],
       "cmds": ["长风寄锦", "下载器"]
+    },
+    {
+      "code": "link",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "下载链接",
+          "match": "/^https?:\\/\\/\\S+$/i",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      ]
     }
   ]
 }

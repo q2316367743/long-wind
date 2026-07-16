@@ -14,12 +14,12 @@ import {
 } from "tdesign-vue-next";
 import { useSettingStore} from "@/store";
 
-export async function openPostDownloadDialog(): Promise<void> {
+export async function openPostDownloadDialog(url = ''): Promise<void> {
   const settingsStore = useSettingStore()
 
   const data = ref<PostDownload>({
     taskType: 'http',
-    url: '',
+    url: url,
     name: '',
     threads: settingsStore.state.maxDownloadSlices,
     folder: settingsStore.state.downloadPath,

@@ -3,7 +3,7 @@
     <template #extra>
       <t-space size="small">
         <t-button theme="default" @click="loadRecords">刷新</t-button>
-        <t-button theme="primary" @click="openPostDownloadDialog">新建下载</t-button>
+        <t-button theme="primary" @click="openPostDownloadDialog()">新建下载</t-button>
       </t-space>
     </template>
     <div class="home">
