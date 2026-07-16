@@ -9,6 +9,7 @@ interface ProgressEvent {
 
 interface DownloadFileOptions {
   headers?: Record<string, string>
+  proxy?: string
 }
 
 interface RouteMeta {

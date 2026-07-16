@@ -4,6 +4,7 @@ export interface DownloadEngineOptions {
   segments: SegmentRecord[]
   threads: number
   headers: Record<string, string>
+  proxy: string
   getLocalPath(segment: SegmentRecord): string
   shouldStop(): boolean
   onSegmentChange(segment: SegmentRecord): Promise<void>
@@ -59,7 +60,7 @@ export class DownloadEngine {
       await window.preload.net.downloadFileFromUrl(
         segment.url,
         localPath,
-        { headers },
+        { headers, proxy: options.proxy },
         (progress) => {
           segment.loaded = progress.loaded
           segment.total = progress.total || segment.total

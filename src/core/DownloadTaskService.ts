@@ -185,6 +185,7 @@ class DownloadTaskService {
       segments,
       threads: task.config.threads,
       headers: buildHeaders(task.config),
+      proxy: task.config.proxy,
       getLocalPath: (segment) => getSegmentFilePath(task.id, segment.index),
       shouldStop: () => this.stoppedTaskIds.has(task.id),
       onSegmentChange: async () => {

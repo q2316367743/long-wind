@@ -1,8 +1,23 @@
-const { URL } = require('node:url')
-const https = require('node:https')
-const http = require('node:http')
 const fs = require('node:fs')
 const { pathToFileURL } = require('url')
+const axios = require('axios')
+
+const parseProxy = (proxy) => {
+  if (!proxy) return false
+  const url = new URL(proxy)
+  const result = {
+    protocol: url.protocol.replace(':', ''),
+    host: url.hostname,
+    port: Number(url.port || (url.protocol === 'https:' ? 443 : 80))
+  }
+  if (url.username || url.password) {
+    result.auth = {
+      username: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password)
+    }
+  }
+  return result
+}
 
 module.exports = {
   /**
@@ -13,62 +28,45 @@ module.exports = {
    * @param onProgress 下载进度回调
    * @return {Promise<void>}
    */
-  downloadFileFromUrl: (url, path, options, onProgress) => {
+  downloadFileFromUrl: async (url, path, options, onProgress) => {
     const file = fs.createWriteStream(path)
-    const link = new URL(url)
+    const cleanup = () => {
+      file.close()
+      if (fs.existsSync(path)) fs.unlinkSync(path)
+    }
 
-    return new Promise((resolve, reject) => {
-      let total = 0
+    try {
+      const response = await axios({
+        url,
+        method: 'GET',
+        responseType: 'stream',
+        headers: options?.headers || {},
+        proxy: parseProxy(options?.proxy),
+        validateStatus: (status) => status >= 200 && status < 300
+      })
+      const total = parseInt(response.headers['content-length'] || '0', 10)
       let loaded = 0
-
-      const cleanup = () => {
-        file.close()
-        if (fs.existsSync(path)) {
-          fs.unlinkSync(path)
-        }
-      }
-
-      file
-        .on('finish', function () {
-          file.close()
-          resolve()
-        })
-        .on('error', (e) => {
-          cleanup()
-          reject(e)
-        })
-
-      const protocol = link.protocol.startsWith('https') ? https : http
-
-      protocol
-        .get(link, { headers: options?.headers || {} }, (response) => {
-          if (response.statusCode < 200 || response.statusCode >= 300) {
-            cleanup()
-            reject(new Error(`Download failed with status code ${response.statusCode}`))
-            return
-          }
-
-          total = parseInt(response.headers['content-length'] || '0', 10)
-
-          response.on('data', (chunk) => {
-            loaded += chunk.length
-            if (typeof onProgress === 'function') {
-              onProgress({
-                total,
-                loaded,
-                percent: total > 0 ? Math.round((loaded / total) * 100) : 0,
-              })
-            }
+      response.data.on('data', (chunk) => {
+        loaded += chunk.length
+        if (typeof onProgress === 'function') {
+          onProgress({
+            total,
+            loaded,
+            percent: total > 0 ? Math.round((loaded / total) * 100) : 0
           })
-
-          response.pipe(file)
-        })
-        .on('error', (error) => {
-          cleanup()
-          reject(error)
-        })
-        .end()
-    })
+        }
+      })
+      response.data.pipe(file)
+      await new Promise((resolve, reject) => {
+        file.on('finish', resolve)
+        file.on('error', reject)
+        response.data.on('error', reject)
+      })
+      file.close()
+    } catch (error) {
+      cleanup()
+      throw error
+    }
   },
   pathToHref: (path) => {
     return pathToFileURL(path).href
