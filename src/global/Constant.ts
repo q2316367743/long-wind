@@ -6,7 +6,7 @@ export const Constant = {
   // 项目中文名称
   name: '长风寄锦',
   // 版本
-  version: '1.0.0',
+  version: '2.0.1',
   // 作者
   author: '落雨不悔',
   // 仓库

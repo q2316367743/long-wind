@@ -4,7 +4,7 @@
   "name": "long-wind",
   "title": "长风寄锦",
   "description": "长风寄锦",
-  "version": "1.0.0",
+  "version": "2.0.1",
 
   "main": "dist/index.html",
   "preload": "preload.js",
