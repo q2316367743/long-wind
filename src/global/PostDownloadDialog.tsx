@@ -1,4 +1,6 @@
-import {PostDownload} from "@/domain/PostDownload";
+import { downloadTaskService } from '@/core/DownloadTaskService'
+import { PostDownload } from '@/domain/PostDownload'
+import { MessageUtil } from '@/utils/modal'
 import {
   Button,
   Checkbox,
@@ -26,17 +28,29 @@ export async function openPostDownloadDialog(): Promise<void> {
     referer: '',
     cookie: '',
     proxy: settingsStore.state.proxy || '',
-    jump: true
   })
   const advance = ref(false);
+  const submitting = ref(false)
 
   const handleCancel = () => {
     dp.destroy();
   }
-  const handleSubmit = () => {
-
-    // TODO: 提交下载任务
-    dp.destroy();
+  const handleSubmit = async () => {
+    if (submitting.value) return
+    if (!data.value.url.trim()) {
+      MessageUtil.warning('请输入下载链接')
+      return
+    }
+    submitting.value = true
+    try {
+      await downloadTaskService.createTasks(data.value)
+      MessageUtil.success('下载任务已创建')
+      dp.destroy();
+    } catch (error) {
+      MessageUtil.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      submitting.value = false
+    }
   }
 
   const dp = DialogPlugin({
@@ -49,7 +63,7 @@ export async function openPostDownloadDialog(): Promise<void> {
                   placeholder="请输入下载链接，支持以下格式：
 · 单个链接：直接粘贴一个下载地址
 · 多个链接：每行一个链接，系统将自动创建多个下载任务
-· 支持HTTP/HTTPS、M3U8、磁力链接等"></Textarea>
+· 支持HTTP/HTTPS、M3U8、MPD链接"></Textarea>
       </FormItem>
       <Form layout={'inline'} class={'mb-8px'}>
         <FormItem label={'重命名'}>
@@ -83,8 +97,8 @@ export async function openPostDownloadDialog(): Promise<void> {
     footer: () => <div class={'flex justify-between items-center'}>
       <Checkbox v-model={advance.value}>高级设置</Checkbox>
       <Space size={'small'}>
-        <Button theme={'default'} onClick={handleCancel}>取消</Button>
-        <Button theme={'primary'} onClick={handleSubmit}>提交</Button>
+        <Button theme={'default'} disabled={submitting.value} onClick={handleCancel}>取消</Button>
+        <Button theme={'primary'} loading={submitting.value} onClick={handleSubmit}>提交</Button>
       </Space>
     </div>
   })

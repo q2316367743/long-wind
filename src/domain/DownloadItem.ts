@@ -16,8 +16,9 @@ export type DownloadTaskType = 'http' | 'm3u8' | 'torrent' | 'ftp';
  * final_merging - 最终合并中
  * finished - 完成
  * failed - 失败
+ * cancelled - 已取消
  */
-export type DownloadItemStatus = 'waiting' | 'downloading' | 'paused' | 'batch_merging' | 'final_merging' | 'finished' | 'failed';
+export type DownloadItemStatus = 'waiting' | 'downloading' | 'paused' | 'batch_merging' | 'final_merging' | 'finished' | 'failed' | 'cancelled';
 
 /**
  * 下载项

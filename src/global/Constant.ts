@@ -12,3 +12,16 @@ export const Constant = {
   // 仓库
   repo: ''
 }
+
+export const getAppData = () => {
+  return window.preload.path.join(
+    window.preload.inject.os.getPath('appData'),
+    window.preload.inject.getPlatform(),
+    'app',
+    Constant.id
+  )
+}
+
+export const getRecordPath = () => {
+  return window.preload.path.join(getAppData(), 'record.json')
+}

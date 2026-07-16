@@ -3,7 +3,7 @@
     <t-aside style="z-index: 50" width="64px">
       <t-menu v-model="path" :collapsed="true" style="height: 100vh">
         <template #operations>
-          <t-button theme="primary" variant="text" shape="square">
+          <t-button theme="primary" variant="text" shape="square" @click="openPostDownloadDialog">
             <template #icon>
               <add-icon />
             </template>
@@ -31,6 +31,8 @@
 <script lang="ts" setup>
 import { useRoute, useRouter } from 'vue-router'
 import { AddIcon, SettingIcon, ViewListIcon } from 'tdesign-icons-vue-next'
+import { openPostDownloadDialog } from '@/global/PostDownloadDialog'
+import { getAppData } from '@/global/Constant'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,6 +52,10 @@ watch(
 window.preload.inject.onPluginEnter((action) => {
   // 对关键字进行处理
   console.log(action)
+})
+
+onMounted(() => {
+  console.log('App mounted, launch on', getAppData())
 })
 </script>
 <style scoped lang="less">

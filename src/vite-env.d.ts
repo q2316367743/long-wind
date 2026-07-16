@@ -7,6 +7,10 @@ interface ProgressEvent {
   percent: number
 }
 
+interface DownloadFileOptions {
+  headers?: Record<string, string>
+}
+
 interface RouteMeta {
   hidden?: boolean
   icon: JSX.Element
@@ -25,6 +29,7 @@ declare global {
         downloadFileFromUrl(
           url: string,
           path: string,
+          options?: DownloadFileOptions,
           onProgress?: (progress: ProgressEvent) => void
         ): Promise<void>
         /**
@@ -35,6 +40,7 @@ declare global {
       }
       inject: InjectApi
       fs: FsApi
+      path: PathApi
       axios: AxiosInstance
     }
   }

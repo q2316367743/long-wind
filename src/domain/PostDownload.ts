@@ -49,9 +49,5 @@ export interface PostDownload {
    * @example http://127.0.0.1:7890
    */
   proxy: string;
-  /**
-   * 跳转到下载页面
-   */
-  jump: boolean;
 
 }

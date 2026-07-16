@@ -9,10 +9,11 @@ module.exports = {
    * 从url下载一个文件
    * @param url 文件地址
    * @param path 保存的地址
+   * @param options 下载选项
    * @param onProgress 下载进度回调
    * @return {Promise<void>}
    */
-  downloadFileFromUrl: (url, path, onProgress) => {
+  downloadFileFromUrl: (url, path, options, onProgress) => {
     const file = fs.createWriteStream(path)
     const link = new URL(url)
 
@@ -40,7 +41,7 @@ module.exports = {
       const protocol = link.protocol.startsWith('https') ? https : http
 
       protocol
-        .get(link, (response) => {
+        .get(link, { headers: options?.headers || {} }, (response) => {
           if (response.statusCode < 200 || response.statusCode >= 300) {
             cleanup()
             reject(new Error(`Download failed with status code ${response.statusCode}`))

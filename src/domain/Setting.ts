@@ -15,8 +15,8 @@ export interface Setting {
   useProxy: boolean
   // 代理地址，格式：[http://][USER:PASSWORD@]HOST[:PORT]
   proxy: string
-  // 忽略的主机与域名，逗号隔开
-  ignoreHosts: string
+  // 忽略的主机与域名
+  ignoreHosts: string[]
   // User-Agent
   userAgent: string
   // 自定义 ffmpeg 路径
@@ -27,13 +27,13 @@ export function buildSetting(): Setting {
   return {
     downloadPath: window.preload.inject.os.getPath('downloads'),
     downloadLimit: 0,
-    maxDownloadTasks: 0,
-    maxDownloadSlices: 0,
+    maxDownloadTasks: 3,
+    maxDownloadSlices: 3,
     downloadCompleteNotification: false,
     downloadCompleteOpenFolder: false,
     useProxy: false,
     proxy: 'http://127.0.0.1:7890',
-    ignoreHosts: 'localhost,127.0.0.1',
+    ignoreHosts: ['localhost', '127.0.0.1'],
     userAgent: 'utools-downloader/1.0.0',
     ffmpeg: ''
   }

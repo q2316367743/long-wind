@@ -11,6 +11,11 @@ export const routes: Array<RouteRecordRaw> = [
     name: '设置',
     path: '/setting',
     component: () => import('@/pages/setting/index.vue')
+  },
+  {
+    name: '下载详情',
+    path: '/info/:key',
+    component: () => import('@/pages/info/index.vue')
   }
 ]
 

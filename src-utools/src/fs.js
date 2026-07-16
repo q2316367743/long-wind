@@ -1,5 +1,5 @@
-const { createReadStream, createWriteStream, statSync } = require('node:fs')
-const { readdir, readFile, writeFile } = require('node:fs/promises')
+const { createReadStream, createWriteStream, statSync, existsSync } = require('node:fs')
+const { mkdir, readdir, readFile, rm, unlink, writeFile } = require('node:fs/promises')
 const { join } = require('node:path')
 
 const appendFile = (writer, path) => {
@@ -31,11 +31,22 @@ module.exports = {
     }
     return paths
   },
+  ensureDir: (path) => {
+    return mkdir(path, { recursive: true })
+  },
   writeTextFile: (path, text) => {
     return writeFile(path, text, 'utf-8')
   },
   readTextFile: (path) => {
     return readFile(path, 'utf-8')
+  },
+  removeFile: async (path) => {
+    if (!existsSync(path)) return
+    await unlink(path)
+  },
+  removeDir: async (path) => {
+    if (!existsSync(path)) return
+    await rm(path, { recursive: true, force: true })
   },
   mergeFiles: async (paths, target) => {
     const writer = createWriteStream(target)
@@ -52,5 +63,8 @@ module.exports = {
         reject(error)
       }
     })
+  },
+  existsSync: (path) => {
+    return existsSync(path)
   }
 }
